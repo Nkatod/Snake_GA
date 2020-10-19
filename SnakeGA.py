@@ -317,7 +317,7 @@ class Snake(gym.Env):
     def updateGameMatrix(self):
         for i in range(self.gameMatrix.shape[0]):
             for j in range(self.gameMatrix.shape[1]):
-                self.gameMatrix[i][j] = 0.0
+                self.gameMatrix[i][j] = 0.01
         # update snake pos
         for i in self.snakeBody:
             self.gameMatrix[i[0]][i[1]] = 0.5;
@@ -334,7 +334,7 @@ class Snake(gym.Env):
 
 
 if __name__ == '__main__':
-    numBots = 100
+    numBots = 40
     popul = []  # здесь будет лежать популяция
     reward_list = []  # здесь будет сумма вознаграждений для каждого эпизода
     for i in range(numBots):
@@ -343,7 +343,8 @@ if __name__ == '__main__':
     nsurv = 20  # количество выживших
     nnew = numBots - nsurv  # количество новых
     epohs = 500  # количество эпох
-    mut = 0.5  # коэфициент мутаций
+    mut = 0.2  # коэфициент мутаций
+    mutStrength = 1e-1
     curr_time = time.time()
     prevscore = 0
     snake_game = Snake(width=game_heigh, thickness=20)
@@ -359,8 +360,7 @@ if __name__ == '__main__':
             snake_game.play_game()
             reward_list.append(snake_game.score)
         newpopul, sval = getSurvPopul(popul = popul, val = reward_list, nsurv = nsurv, reverse=1)  # получили популяцию выживших, нас интересует бот с максимальным успехом, поэтому reverse = 1
-        print(it, time.time() - curr_time, " ",
-              sval[0:3])  # Выводим время на операцию, среднее значение и 20 лучших ботов
+        print(it, time.time() - curr_time, " ",sval[0:3])  # Выводим время на операцию, среднее значение и 20 лучших ботов
         # проходимся по новой популяции
         for k in range(nnew):
             # вытаскиваем новых родителей
@@ -370,7 +370,10 @@ if __name__ == '__main__':
                 x = crossPointFrom2Parents(botp1, botp2, j)  # скрещиваем
                 for t in range(botp1.shape[1]):
                     if random.random() < mut:
-                        x[t] += random.random() * 1e-1
+                        if random.random() < 0.5:
+                            x[t] = random.random()
+                        else:
+                            x[t] += random.random() * mutStrength
                 newbot.append(x)  # закидываем элемент в бота
             newpopul.append(newbot)  # добавляем бота
         popul = newpopul # вывести список на эпоху
