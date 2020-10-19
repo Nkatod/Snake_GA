@@ -1,7 +1,3 @@
-# This is a sample Python script.
-
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
 import pygame, sys, random, time
 import gym
 from gym import spaces
@@ -15,8 +11,7 @@ import numpy as np
         - nsurv - количество выживших
         - reverse - указываем требуемую операцию поиска результата: максимизация или минимизация
 '''
-
-
+game_heigh = 15
 def getSurvPopul(
         popul,
         val,
@@ -37,7 +32,7 @@ def getSurvPopul(
         index = val.index(sval[i])  # Получаем индекс i-того элемента sval в исходном массиве val
         newpopul.append(popul[index])  # В новую папуляцию добавляем элемент из текущей популяции с найденным индексом
     while len(newpopul) < nsurv:
-        bot = np.random.random((20, 3))
+        bot = np.random.random((game_heigh, 3))
         newpopul.append(bot)
 
     return newpopul, sval  # Возвращаем новую популяцию (из nsurv элементов) и сортированный список
@@ -261,9 +256,9 @@ class Snake(gym.Env):
             self.game_over = True
 
     def play_game(self):
-        self.init_interface()
+        #self.init_interface()
         while self.game_over == False:
-            direction = self.get_pressed_key()
+            #direction = self.get_pressed_key()
             self.updateGameMatrix()
             direction = self.get_direction_from_GA()
             self.move_snake(direction)
@@ -308,7 +303,7 @@ class Snake(gym.Env):
                                                self.thickness, self.thickness))
         self.render_score()
         self.pygame.display.flip()
-        self.fpsController.tick(500)
+        self.fpsController.tick(10000)
         # self.draw_toColab()
 
     def init_interface(self):
@@ -325,14 +320,14 @@ class Snake(gym.Env):
                 self.gameMatrix[i][j] = 0.0
         # update snake pos
         for i in self.snakeBody:
-            self.gameMatrix[i[0]][i[1]] = 0.4;
-        self.gameMatrix[self.snakePos[0]][self.snakePos[1]] = 0.2
+            self.gameMatrix[i[0]][i[1]] = 0.5;
+        self.gameMatrix[self.snakePos[0]][self.snakePos[1]] = 0.4
         self.gameMatrix[self.foodPos[0]][self.foodPos[1]] = 0.99
 
     def get_direction_from_GA(self):
         newm = self.gameMatrix.flatten()
         result = np.dot(self.gameMatrix, self.agent)
-        result = np.sum(result, axis=0)
+        result = np.max(result, axis=0)
         # result = np.dot(result, np.ones((20,3)))
         action = np.argmax(result)
         return self.possible_actions[action]
@@ -343,7 +338,7 @@ if __name__ == '__main__':
     popul = []  # здесь будет лежать популяция
     reward_list = []  # здесь будет сумма вознаграждений для каждого эпизода
     for i in range(numBots):
-        bot = np.random.random((20, 3))
+        bot = np.random.random((game_heigh, 3))
         popul.append(bot)
     nsurv = 20  # количество выживших
     nnew = numBots - nsurv  # количество новых
@@ -351,7 +346,9 @@ if __name__ == '__main__':
     mut = 0.5  # коэфициент мутаций
     curr_time = time.time()
     prevscore = 0
-    snake_game = Snake(width=20, thickness=20)
+    snake_game = Snake(width=game_heigh, thickness=20)
+    snake_game.init_interface()
+
     for it in range(epohs):  # создали список списков всех значений по эпохам
         reward_list = []
         for bot in popul:
@@ -361,8 +358,7 @@ if __name__ == '__main__':
             #    snake_game.mode = 'render'
             snake_game.play_game()
             reward_list.append(snake_game.score)
-        newpopul, sval = getSurvPopul(popul=popul, val=reward_list, nsurv=nsurv,
-                                      reverse=1)  # получили популяцию выживших, нас интересует бот с максимальным успехом, поэтому reverse = 1
+        newpopul, sval = getSurvPopul(popul = popul, val = reward_list, nsurv = nsurv, reverse=1)  # получили популяцию выживших, нас интересует бот с максимальным успехом, поэтому reverse = 1
         print(it, time.time() - curr_time, " ",
               sval[0:3])  # Выводим время на операцию, среднее значение и 20 лучших ботов
         # проходимся по новой популяции
@@ -370,14 +366,12 @@ if __name__ == '__main__':
             # вытаскиваем новых родителей
             botp1, botp2 = getParents(newpopul, nsurv)
             newbot = []  # здесь будет новый бот
-            for j in range(
-                    len(botp1)):  # боты-родители одинаковой длины, будем проходиться по каждому элементу родителя
+            for j in range(len(botp1)):  # боты-родители одинаковой длины, будем проходиться по каждому элементу родителя
                 x = crossPointFrom2Parents(botp1, botp2, j)  # скрещиваем
                 for t in range(botp1.shape[1]):
                     if random.random() < mut:
                         x[t] += random.random() * 1e-1
                 newbot.append(x)  # закидываем элемент в бота
             newpopul.append(newbot)  # добавляем бота
-        popul = newpopul  # вывести список на эпоху
-        popul = np.array(
-            popul)  # для того, чтобы можно было легко вытащить индексы условием, преобразуем в numpy массив
+        popul = newpopul # вывести список на эпоху
+        popul = np.array(popul)  # для того, чтобы можно было легко вытащить индексы условием, преобразуем в numpy массив
